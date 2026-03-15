@@ -668,7 +668,6 @@ body{font-family:'Space Grotesk',sans-serif;font-size:13px;line-height:1.5;backg
   margin-right:10px;
   padding:0;
   position:relative;
-  overflow:hidden;
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
 }
@@ -880,18 +879,8 @@ body{font-family:'Space Grotesk',sans-serif;font-size:13px;line-height:1.5;backg
 .mob-nav-btn.on{color:#818cf8;}
 [data-theme="dark"] .mob-nav-btn.on{text-shadow:0 0 8px rgba(129,140,248,0.5);}
 
-/* Touch devices — always show mobile nav, hide desktop nav */
-@media (pointer:coarse){
-  .topbar-nav{display:none!important;}
-  .mobile-nav{display:block!important;}
-  .mob-sidebar-overlay{display:block;}
-  .acct-chip{display:none!important;}
-}
-/* Real desktop mouse — always show desktop nav, hide mobile nav */
-@media (pointer:fine) and (min-width:769px){
-  .mobile-nav{display:none!important;}
-  .topbar-nav{display:flex!important;}
-}
+/* Mobile sidebar overlay */
+.mob-sidebar-overlay{
   display:none;
   position:fixed;inset:0;z-index:350;
   background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
@@ -899,6 +888,20 @@ body{font-family:'Space Grotesk',sans-serif;font-size:13px;line-height:1.5;backg
   transition:opacity .28s;
 }
 .mob-sidebar-overlay.on{opacity:1;pointer-events:all;}
+
+/* Touch devices — show bottom nav, hide desktop topbar nav */
+@media (pointer:coarse){
+  .topbar-nav{display:none!important;}
+  .mobile-nav{display:block!important;}
+  .mob-sidebar-overlay{display:block;}
+  .acct-chip{display:none!important;}
+  .settings-btn span{display:none;}
+}
+/* Desktop mouse — always show desktop nav, hide mobile bottom bar */
+@media (pointer:fine) and (min-width:769px){
+  .mobile-nav{display:none!important;}
+  .topbar-nav{display:flex!important;}
+}
 
 @media (max-width:768px){
   /* Layout */
@@ -1515,17 +1518,12 @@ input, textarea, select {
 ══════════════════════════════════════ */
 let _sidebarOpen = true;
 
-function isMobile(){
-  return window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024);
-}
-
 function toggleSidebar(){
-  // On mobile — use the overlay sidebar system
-  if(isMobile()){
+  // On mobile use the overlay sidebar, not the desktop grid collapse
+  if(window.innerWidth <= 768 || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches)){
     toggleMobSidebar();
     return;
   }
-  // On desktop — collapse/expand the grid sidebar
   _sidebarOpen = !_sidebarOpen;
   applySidebarState();
   try{ localStorage.setItem('tj_sidebar_open', _sidebarOpen ? '1' : '0'); }catch(e){}
@@ -2472,19 +2470,24 @@ function mobGoPage(page, btn){
 }
 
 function toggleMobSidebar(){
-  const sidebar  = document.getElementById('mainSidebar');
-  const overlay  = document.getElementById('mobSidebarOverlay');
-  const menuBtn  = document.getElementById('mobNavMenu');
+  const sidebar = document.getElementById('mainSidebar');
+  const overlay = document.getElementById('mobSidebarOverlay');
+  const menuBtn = document.getElementById('mobNavMenu');
+  const hbBtn  = document.getElementById('hbBtn');
   if(!sidebar) return;
   const isOpen = sidebar.classList.contains('mob-open');
   if(isOpen){
+    // Close
     sidebar.classList.remove('mob-open');
-    overlay.classList.remove('on');
-    menuBtn && menuBtn.classList.remove('on');
+    if(overlay) overlay.classList.remove('on');
+    if(menuBtn) menuBtn.classList.remove('on');
+    if(hbBtn)   hbBtn.classList.remove('is-open');
   } else {
+    // Open
     sidebar.classList.add('mob-open');
-    overlay.classList.add('on');
-    menuBtn && menuBtn.classList.add('on');
+    if(overlay) overlay.classList.add('on');
+    if(menuBtn) menuBtn.classList.add('on');
+    if(hbBtn)   hbBtn.classList.add('is-open');
   }
 }
 
@@ -2492,9 +2495,11 @@ function closeMobSidebar(){
   const sidebar = document.getElementById('mainSidebar');
   const overlay = document.getElementById('mobSidebarOverlay');
   const menuBtn = document.getElementById('mobNavMenu');
+  const hbBtn   = document.getElementById('hbBtn');
   if(sidebar) sidebar.classList.remove('mob-open');
   if(overlay) overlay.classList.remove('on');
   if(menuBtn) menuBtn.classList.remove('on');
+  if(hbBtn)   hbBtn.classList.remove('is-open');
 }
 
 
